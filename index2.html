@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN Secure | Купить VPN подписку</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0A0F1F 0%, #1A1F2F 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 163, 0.1);
+            border-radius: 24px;
+            transition: all 0.3s;
+        }
+        .glass-card:hover {
+            border-color: #00FFA3;
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 255, 163, 0.1);
+        }
+        .neon-btn {
+            background: #00FFA3;
+            color: #0A0F1F;
+            transition: all 0.3s;
+        }
+        .neon-btn:hover {
+            box-shadow: 0 0 30px rgba(0, 255, 163, 0.3);
+            transform: scale(1.02);
+        }
+        .payment-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .payment-modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #1A1F2F;
+            border-radius: 32px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid #00FFA3;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .success-check {
+            width: 80px;
+            height: 80px;
+            background: #00FFA3;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+            color: #0A0F1F;
+        }
+        .config-box {
+            background: #0A0F1F;
+            border-radius: 12px;
+            padding: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            border: 1px solid #00FFA3;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 glass-card z-50 m-4">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-[#00FFA3] rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-[#0A0F1F]" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/>
+                        </svg>
+                    </div>
+                    <span class="font-bold text-xl">VPN Secure</span>
+                </div>
+                <div class="text-sm text-gray-400">
+                    ⚡ 1247 пользователей онлайн
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 pt-32 pb-20">
+        <!-- Hero -->
+        <div class="text-center max-w-3xl mx-auto mb-20">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                Безопасный VPN
+                <span class="text-[#00FFA3]">за 2 минуты</span>
+            </h1>
+            <p class="text-xl text-gray-400 mb-8">
+                WireGuard конфиг сразу после оплаты. Готовые инструкции. Поддержка 24/7.
+            </p>
+        </div>
+
+        <!-- Tariffs -->
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">
+                Выберите <span class="text-[#00FFA3]">тариф</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Месяц -->
+                <div class="glass-card p-8 text-center">
+                    <div class="text-2xl font-bold mb-2">1 месяц</div>
+                    <div class="text-4xl font-bold text-[#00FFA3] mb-6">150 ₽</div>
+                    <ul class="text-left text-gray-300 mb-8 space-y-3">
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> 1 устройство
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> 50+ стран
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> Безлимитный трафик
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> Поддержка 24/7
+                        </li>
+                    </ul>
+                    <button onclick="selectTariff(1, '1 месяц', 150)" class="w-full neon-btn py-4 rounded-xl font-bold">
+                        Выбрать
+                    </button>
+                </div>
+
+                <!-- 6 месяцев -->
+                <div class="glass-card p-8 text-center relative transform scale-105 border-[#00FFA3] border-2">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-[#00FFA3] text-[#0A0F1F] px-4 py-1 rounded-full text-sm font-bold">
+                        🔥 Выгода 33%
+                    </div>
+                    <div class="text-2xl font-bold mb-2">6 месяцев</div>
+                    <div class="text-4xl font-bold text-[#00FFA3] mb-2">600 ₽</div>
+                    <div class="text-sm text-gray-400 line-through mb-6">900 ₽</div>
+                    <ul class="text-left text-gray-300 mb-8 space-y-3">
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> 3 устройства
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> 50+ стран
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> Безлимитный трафик
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> Приоритетная поддержка
+                        </li>
+                    </ul>
+                    <button onclick="selectTariff(2, '6 месяцев', 600)" class="w-full neon-btn py-4 rounded-xl font-bold">
+                        Выбрать
+                    </button>
+                </div>
+
+                <!-- Год -->
+                <div class="glass-card p-8 text-center">
+                    <div class="text-2xl font-bold mb-2">12 месяцев</div>
+                    <div class="text-4xl font-bold text-[#00FFA3] mb-2">1200 ₽</div>
+                    <div class="text-sm text-gray-400 line-through mb-6">1800 ₽</div>
+                    <ul class="text-left text-gray-300 mb-8 space-y-3">
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> 5 устройств
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> Все страны
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> Безлимитный трафик
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-[#00FFA3]">✓</span> VIP поддержка
+                        </li>
+                    </ul>
+                    <button onclick="selectTariff(3, '12 месяцев', 1200)" class="w-full neon-btn py-4 rounded-xl font-bold">
+                        Выбрать
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="max-w-4xl mx-auto mt-32">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div>
+                    <div class="text-3xl mb-2">⚡</div>
+                    <div class="font-bold">Мгновенная выдача</div>
+                    <div class="text-sm text-gray-400">Конфиг приходит на email через 1 минуту</div>
+                </div>
+                <div>
+                    <div class="text-3xl mb-2">🔒</div>
+                    <div class="font-bold">WireGuard</div>
+                    <div class="text-sm text-gray-400">Самый быстрый протокол</div>
+                </div>
+                <div>
+                    <div class="text-3xl mb-2">📱</div>
+                    <div class="font-bold">QR-код</div>
+                    <div class="text-sm text-gray-400">Для быстрой настройки на телефоне</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-card m-4 p-8">
+        <div class="container mx-auto text-center text-gray-400 text-sm">
+            <p>© 2024 VPN Secure. Все права защищены.</p>
+            <p class="mt-2">Работает через Telegram бота. Поддержка: @vpn_secure_bot</p>
+        </div>
+    </footer>
+
+    <!-- Payment Modal -->
+    <div class="payment-modal" id="paymentModal">
+        <div class="modal-content">
+            <!-- Step 1: Email -->
+            <div class="step active" id="step1">
+                <h3 class="text-2xl font-bold mb-6">Введите email</h3>
+                <p class="text-gray-400 mb-4">На этот адрес придет конфигурация VPN и инструкция</p>
+                <input type="email" id="userEmail" placeholder="your@email.com" 
+                    class="w-full bg-[#0A0F1F] border border-gray-700 rounded-xl p-4 mb-6 text-white focus:border-[#00FFA3] outline-none">
+                <button onclick="processStep1()" class="w-full neon-btn py-4 rounded-xl font-bold mb-4">
+                    Продолжить
+                </button>
+                <button onclick="closePaymentModal()" class="text-gray-400 hover:text-white">
+                    Отмена
+                </button>
+            </div>
+
+            <!-- Step 2: Payment method -->
+            <div class="step" id="step2">
+                <h3 class="text-2xl font-bold mb-6">Способ оплаты</h3>
+                <div class="text-center mb-6">
+                    <div class="text-lg">Тариф: <span id="selectedTariffName" class="text-[#00FFA3]"></span></div>
+                    <div class="text-3xl font-bold text-[#00FFA3] mt-2"><span id="selectedTariffPrice"></span> ₽</div>
+                </div>
+                <div class="space-y-3">
+                    <button onclick="processPayment('card')" class="w-full glass-card p-4 text-left hover:border-[#00FFA3]">
+                        <div class="font-bold">💳 Банковская карта</div>
+                        <div class="text-sm text-gray-400">Visa, Mastercard, МИР</div>
+                    </button>
+                    <button onclick="processPayment('crypto')" class="w-full glass-card p-4 text-left hover:border-[#00FFA3]">
+                        <div class="font-bold">₿ Криптовалюта</div>
+                        <div class="text-sm text-gray-400">BTC, USDT, ETH</div>
+                    </button>
+                </div>
+                <button onclick="backToStep1()" class="mt-6 text-gray-400 hover:text-white">
+                    ← Назад
+                </button>
+            </div>
+
+            <!-- Step 3: Payment link -->
+            <div class="step" id="step3">
+                <h3 class="text-2xl font-bold mb-6">Оплата</h3>
+                <div class="text-center">
+                    <div class="text-6xl mb-4">💰</div>
+                    <p class="mb-4">Ссылка на оплату сгенерирована</p>
+                    <a id="paymentUrl" href="#" target="_blank" class="neon-btn px-8 py-4 rounded-xl inline-block font-bold mb-4">
+                        Перейти к оплате
+                    </a>
+                    <p class="text-sm text-gray-400 mb-4" id="paymentStatus">Ожидаем подтверждение оплаты...</p>
+                    <div class="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                        <div id="paymentProgress" class="bg-[#00FFA3] h-full" style="width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Success -->
+            <div class="step" id="step4">
+                <div class="success-check">✓</div>
+                <h3 class="text-2xl font-bold mb-4 text-center">Оплата подтверждена!</h3>
+                
+                <div class="mb-6">
+                    <div class="font-bold mb-2">Ваш конфиг WireGuard:</div>
+                    <div class="config-box" id="wireguardConfig">
+                        [Interface]
+Address = 10.0.0.2/24
+PrivateKey = eJ3sTvQXm7nYpL8WqK9rNcR2fHj5ZbM6xVwDgUy1UkE=
+
+[Peer]
+PublicKey = 9sTvQXm7nYpL8WqK9rNcR2fHj5ZbM6xVwDgUy1UkE=
+Endpoint = vpn.vpn-secure.com:51820
+AllowedIPs = 0.0.0.0/0
+                    </div>
+                </div>
+
+                <div class="mb-6 text-center">
+                    <img id="qrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=wireguard://vpn.vpn-secure.com:51820?publickey=9sTvQXm7nYpL8WqK9rNcR2fHj5ZbM6xVwDgUy1UkE=" alt="QR Code" class="mx-auto">
+                    <p class="text-sm text-gray-400 mt-2">Отсканируйте в приложении WireGuard</p>
+                </div>
+
+                <div class="mb-6">
+                    <div class="font-bold mb-2">📧 Инструкция отправлена на:</div>
+                    <div id="userEmailDisplay" class="text-[#00FFA3]"></div>
+                </div>
+
+                <div class="text-center">
+                    <p class="text-sm text-gray-400 mb-4">Конфиг также сохранен в .txt файл</p>
+                    <button onclick="downloadConfig()" class="neon-btn px-8 py-3 rounded-xl font-bold">
+                        📥 Скачать .txt
+                    </button>
+                    <button onclick="closePaymentModal()" class="block w-full text-center mt-4 text-gray-400 hover:text-white">
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentStep = 1;
+        let selectedTariff = {
+            id: null,
+            name: '',
+            price: 0
+        };
+        let userEmail = '';
+        let currentPaymentId = null;
+        let paymentCheckInterval = null;
+
+        // Mock API calls (замените на реальные при интеграции с ботом)
+        const API = {
+            // Создание платежа (бот генерирует ссылку)
+            async createPayment(tariffId, email, method) {
+                console.log('Creating payment:', { tariffId, email, method });
+                // Имитация запроса к боту
+                return {
+                    paymentId: 'pay_' + Math.random().toString(36).substr(2, 9),
+                    paymentUrl: 'https://payment.example.com/' + Math.random().toString(36).substr(2, 9)
+                };
+            },
+
+            // Проверка статуса платежа (вебхук)
+            async checkPayment(paymentId) {
+                console.log('Checking payment:', paymentId);
+                // Имитация проверки (через 15 секунд успех)
+                if (!this._paymentStartTime) {
+                    this._paymentStartTime = Date.now();
+                }
+                if (Date.now() - this._paymentStartTime > 15000) {
+                    return { status: 'confirmed' };
+                }
+                return { status: 'pending' };
+            },
+
+            // Генерация конфига (бот создает после оплаты)
+            async generateConfig(email, tariffId) {
+                console.log('Generating config for:', email);
+                return {
+                    config: `[Interface]
+Address = 10.0.${Math.floor(Math.random() * 255)}.2/24
+PrivateKey = ${this.generateKey()}
+DNS = 1.1.1.1, 1.0.0.1
+
+[Peer]
+PublicKey = ${this.generateKey()}
+Endpoint = vpn${tariffId}.vpn-secure.com:51820
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25`,
+                    qrData: `wireguard://vpn-secure.com?publickey=${this.generateKey()}`
+                };
+            },
+
+            generateKey() {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+                let key = '';
+                for (let i = 0; i < 44; i++) {
+                    key += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return key;
+            },
+
+            _paymentStartTime: null
+        };
+
+        // UI Functions
+        function selectTariff(id, name, price) {
+            selectedTariff = { id, name, price };
+            openPaymentModal();
+        }
+
+        function openPaymentModal() {
+            document.getElementById('paymentModal').classList.add('active');
+            showStep(1);
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.remove('active');
+            if (paymentCheckInterval) {
+                clearInterval(paymentCheckInterval);
+            }
+            currentStep = 1;
+            selectedTariff = { id: null, name: '', price: 0 };
+            userEmail = '';
+        }
+
+        function showStep(step) {
+            currentStep = step;
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step${step}`).classList.add('active');
+        }
+
+        function backToStep1() {
+            showStep(1);
+        }
+
+        async function processStep1() {
+            const email = document.getElementById('userEmail').value.trim();
+            if (!email || !email.includes('@')) {
+                alert('Введите корректный email');
+                return;
+            }
+            userEmail = email;
+            
+            // Показываем выбранный тариф
+            document.getElementById('selectedTariffName').textContent = selectedTariff.name;
+            document.getElementById('selectedTariffPrice').textContent = selectedTariff.price;
+            
+            showStep(2);
+        }
+
+        async function processPayment(method) {
+            showStep(3);
+            
+            // Бот создает платеж
+            const result = await API.createPayment(selectedTariff.id, userEmail, method);
+            currentPaymentId = result.paymentId;
+            
+            // Показываем ссылку на оплату
+            document.getElementById('paymentUrl').href = result.paymentUrl;
+            
+            // Начинаем проверку статуса (вебхук)
+            API._paymentStartTime = Date.now();
+            let progress = 0;
+            
+            paymentCheckInterval = setInterval(async () => {
+                // Обновляем прогресс
+                progress = Math.min(100, ((Date.now() - API._paymentStartTime) / 15000) * 100);
+                document.getElementById('paymentProgress').style.width = progress + '%';
+                
+                // Проверяем статус
+                const status = await API.checkPayment(currentPaymentId);
+                
+                if (status.status === 'confirmed') {
+                    clearInterval(paymentCheckInterval);
+                    
+                    // Бот генерирует конфиг
+                    const config = await API.generateConfig(userEmail, selectedTariff.id);
+                    
+                    // Показываем результат
+                    document.getElementById('wireguardConfig').textContent = config.config;
+                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(config.qrData)}`;
+                    document.getElementById('userEmailDisplay').textContent = userEmail;
+                    
+                    showStep(4);
+                }
+            }, 1000);
+        }
+
+        function downloadConfig() {
+            const config = document.getElementById('wireguardConfig').textContent;
+            const blob = new Blob([config], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'vpn-config.txt';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', () => {
+            // Здесь можно загрузить реальные тарифы из бота при необходимости
+            console.log('Landing loaded');
+        });
+    </script>
+</body>
+</html>
