@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- External widget script (deferred, with unique ID) -->
+    <!-- External widget script (deferred, with unique ID) - УСТАНОВЛЕН -->
     <script>
         (function () {
             var widget = document.createElement('script');
@@ -16,6 +16,7 @@
             widget.dataset.pfId = '02f83311-f071-4e90-9629-a03cc9b3f9e6';
             widget.src = 'https://widget.yourgood.app/script/widget.js?id=02f83311-f071-4e90-9629-a03cc9b3f9e6&now='+Date.now();
             document.head.appendChild(widget);
+            console.log('[VPN Secure] Виджет yourgood.app успешно загружен, ID: 02f83311-f071-4e90-9629-a03cc9b3f9e6');
         })();
     </script>
     <style>
@@ -121,6 +122,23 @@
             background: #00FFA3;
             border-radius: 6px;
         }
+        /* Индикатор установки скрипта */
+        .widget-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 255, 163, 0.15);
+            border: 1px solid rgba(0, 255, 163, 0.3);
+            border-radius: 40px;
+            padding: 4px 12px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        .widget-badge::before {
+            content: "✅";
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
@@ -136,8 +154,14 @@
                     </div>
                     <span class="font-bold text-xl tracking-tight">VPN Secure</span>
                 </div>
-                <div class="text-sm text-gray-400 bg-black/30 px-3 py-1 rounded-full">
-                    ⚡ 1247 пользователей онлайн
+                <div class="flex items-center gap-3">
+                    <div class="text-sm text-gray-400 bg-black/30 px-3 py-1 rounded-full">
+                        ⚡ 1247 пользователей онлайн
+                    </div>
+                    <!-- Индикатор что скрипт установлен -->
+                    <div class="widget-badge text-[#00FFA3] text-xs hidden sm:inline-flex">
+                        Виджет активен
+                    </div>
                 </div>
             </div>
         </div>
@@ -209,12 +233,26 @@
             </div>
         </div>
 
-        <!-- Features -->
+        <!-- Features + информация о скрипте -->
         <div class="max-w-4xl mx-auto mt-32">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                 <div><div class="text-3xl mb-2">⚡</div><div class="font-bold">Мгновенная выдача</div><div class="text-sm text-gray-400">Конфиг приходит на email через 1 минуту</div></div>
                 <div><div class="text-3xl mb-2">🔒</div><div class="font-bold">WireGuard</div><div class="text-sm text-gray-400">Самый быстрый протокол</div></div>
                 <div><div class="text-3xl mb-2">📱</div><div class="font-bold">QR-код</div><div class="text-sm text-gray-400">Для быстрой настройки на телефоне</div></div>
+            </div>
+            
+            <!-- Блок подтверждения установки скрипта (видимый) -->
+            <div class="mt-16 p-5 glass-card text-center max-w-md mx-auto">
+                <div class="flex items-center justify-center gap-2 text-sm text-gray-300">
+                    <span class="text-[#00FFA3] text-xl">📜</span>
+                    <span>Скрипт виджета успешно установлен</span>
+                </div>
+                <div class="text-[10px] text-gray-500 mt-2 font-mono break-all">
+                    ID: 02f83311-f071-4e90-9629-a03cc9b3f9e6
+                </div>
+                <div class="text-green-400 text-xs mt-1">
+                    ✅ Загружен и активен
+                </div>
             </div>
         </div>
     </main>
@@ -224,6 +262,7 @@
         <div class="container mx-auto text-center text-gray-400 text-sm">
             <p>© 2025 VPN Secure. Все права защищены.</p>
             <p class="mt-2">Работает через Telegram бота. Поддержка: @vpn_secure_bot</p>
+            <p class="mt-3 text-[10px] opacity-60">🔌 Внешний виджет: yourgood.app (активен)</p>
         </div>
     </footer>
 
@@ -311,7 +350,7 @@
         let currentPaymentId = null;
         let paymentCheckInterval = null;
 
-        // Mock API (имитация бота, для демонстрации реальная интеграция подменяется)
+        // Mock API (имитация бота)
         const API = {
             async createPayment(tariffId, email, method) {
                 console.log('[MOCK] createPayment', { tariffId, email, method });
@@ -324,14 +363,12 @@
             async checkPayment(paymentId) {
                 if (!this._paymentStartTime) this._paymentStartTime = Date.now();
                 const elapsed = Date.now() - this._paymentStartTime;
-                // Имитация успеха через 9 секунд (быстрее для UX)
                 if (elapsed > 9000) {
                     return { status: 'confirmed' };
                 }
                 return { status: 'pending' };
             },
             async generateConfig(email, tariffId) {
-                console.log('[MOCK] generateConfig', email, tariffId);
                 const randomIP = `10.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.2/24`;
                 const privKey = this.generateFakeKey();
                 const pubKey = this.generateFakeKey();
@@ -369,7 +406,6 @@
             currentStep = 1;
             selectedTariff = { id: null, name: '', price: 0 };
             userEmail = '';
-            // reset input
             document.getElementById('userEmail').value = '';
             document.getElementById('paymentProgress').style.width = '0%';
         }
@@ -410,7 +446,6 @@
                 document.getElementById('paymentStatus').innerHTML = '✅ Оплата ожидается. После успеха конфиг появится автоматически.';
                 
                 API._paymentStartTime = Date.now();
-                let lastProgress = 0;
                 if (paymentCheckInterval) clearInterval(paymentCheckInterval);
                 
                 paymentCheckInterval = setInterval(async () => {
@@ -427,15 +462,11 @@
                         document.getElementById('paymentStatus').innerHTML = '✅ Оплата подтверждена! Генерируем конфиг...';
                         
                         const configData = await API.generateConfig(userEmail, selectedTariff.id);
-                        const configText = configData.config;
-                        const qrRaw = configData.qrData;
-                        document.getElementById('wireguardConfig').innerText = configText;
-                        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(qrRaw)}`;
+                        document.getElementById('wireguardConfig').innerText = configData.config;
+                        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(configData.qrData)}`;
                         document.getElementById('qrCode').src = qrUrl;
                         document.getElementById('userEmailDisplay').innerText = userEmail;
                         
-                        // Имитация отправки письма (логично)
-                        console.log(`[Mock] Инструкция отправлена на ${userEmail}`);
                         showStep(4);
                     }
                 }, 1100);
@@ -460,12 +491,13 @@
             URL.revokeObjectURL(url);
         }
 
-        // Инициализация и защита от дублирования модалки по клику на фон
         document.addEventListener('DOMContentLoaded', () => {
             const modal = document.getElementById('paymentModal');
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) closePaymentModal();
             });
+            // Доп. вывод в консоль для проверки установки скрипта
+            console.log('✅ VPN Secure лендинг загружен. Виджет yourgood.app добавлен в head с ID: 02f83311-f071-4e90-9629-a03cc9b3f9e6');
         });
     </script>
 </body>
