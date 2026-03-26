@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>VPN Secure | Подписка WireGuard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0A0F1F 0%, #1A1F2F 100%); color: white; min-height: 100vh; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(0, 255, 163, 0.1); border-radius: 24px; transition: all 0.3s ease; }
+        .glass-card:hover { border-color: #00FFA3; transform: translateY(-3px); }
+        .neon-btn { background: #00FFA3; color: #0A0F1F; transition: all 0.3s ease; font-weight: 700; }
+        .payment-modal { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 1000; align-items: center; justify-content: center; }
+        .payment-modal.active { display: flex; }
+        .modal-content { background: #1A1F2F; border-radius: 24px; padding: 32px; max-width: 620px; width: 95%; border: 1px solid #00FFA3; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .status-pending { background: rgba(255,165,0,.2); color: #FFA500; border: 1px solid rgba(255,165,0,.3); }
+        .status-paid { background: rgba(0,255,163,.2); color: #00FFA3; border: 1px solid rgba(0,255,163,.3); }
+        .status-expired { background: rgba(255,0,0,.2); color: #FF4444; border: 1px solid rgba(255,0,0,.3); }
+        a.footer-link { color: #9ca3af; text-decoration: underline; }
+        a.footer-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+<header class="fixed top-0 left-0 right-0 glass-card z-50 m-4">
+    <div class="container mx-auto px-6 py-4 flex items-center justify-between">
+        <span class="font-bold text-xl">VPN Secure</span>
+        <span class="text-sm text-gray-400">WireGuard-подписка</span>
+    </div>
+</header>
+
+<main class="container mx-auto px-4 pt-32 pb-20">
+    <div class="text-center max-w-3xl mx-auto mb-16">
+        <h1 class="text-5xl font-bold mb-4">WireGuard VPN</h1>
+        <p class="text-xl text-gray-400">Выберите тариф и удобный способ оплаты.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div class="glass-card p-8 text-center">
+            <div class="text-2xl font-bold mb-2">1 месяц</div>
+            <div class="text-4xl font-bold text-[#00FFA3] mb-6">150 ₽</div>
+            <button onclick="selectTariff(1, '1 месяц', 150)" class="w-full neon-btn py-3 rounded-xl">Выбрать</button>
+        </div>
+        <div class="glass-card p-8 text-center border-[#00FFA3] border-2">
+            <div class="text-2xl font-bold mb-2">6 месяцев</div>
+            <div class="text-4xl font-bold text-[#00FFA3] mb-6">600 ₽</div>
+            <button onclick="selectTariff(2, '6 месяцев', 600)" class="w-full neon-btn py-3 rounded-xl">Выбрать</button>
+        </div>
+        <div class="glass-card p-8 text-center">
+            <div class="text-2xl font-bold mb-2">12 месяцев</div>
+            <div class="text-4xl font-bold text-[#00FFA3] mb-6">1200 ₽</div>
+            <button onclick="selectTariff(3, '12 месяцев', 1200)" class="w-full neon-btn py-3 rounded-xl">Выбрать</button>
+        </div>
+    </div>
+</main>
+
+<footer class="glass-card m-4 p-8 text-center text-gray-400 text-sm space-y-2">
+    <p>© 2026 VPN Secure</p>
+    <p>Платежные системы: Freekassa, Platega, SeverPay, CryptoCloud, CrystalPay, CryptoBot, DonationAlerts, Boosty.</p>
+    <p>Документы: <a class="footer-link" href="/privacy.html" target="_blank">Политика</a> · <a class="footer-link" href="/terms.html" target="_blank">Соглашение</a> · <a class="footer-link" href="/contacts.html" target="_blank">Контакты</a></p>
+</footer>
+
+<div class="payment-modal" id="paymentModal">
+    <div class="modal-content">
+        <div class="step active" id="step1">
+            <h3 class="text-2xl font-bold mb-4">Шаг 1. Подтвердите заказ</h3>
+            <p class="mb-2">Тариф: <span id="selectedTariffName" class="text-[#00FFA3]"></span></p>
+            <p class="mb-4 text-2xl"><span id="selectedTariffPrice" class="text-[#00FFA3]"></span> ₽</p>
+            <label class="text-sm text-gray-400">Email (опционально, для некоторых платежек)</label>
+            <input id="customerEmail" type="email" placeholder="your@email.com" class="w-full mt-2 mb-4 rounded-lg bg-[#0A0F1F] border border-gray-600 p-3">
+            <button onclick="showStep(2)" class="w-full neon-btn py-3 rounded-xl mb-3">Продолжить</button>
+            <button onclick="closePaymentModal()" class="text-gray-400">Отмена</button>
+        </div>
+
+        <div class="step" id="step2">
+            <h3 class="text-2xl font-bold mb-4">Шаг 2. Выберите платежную систему</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button onclick="startPayment('freekassa')" class="glass-card p-3 text-left">Freekassa</button>
+                <button onclick="startPayment('platega')" class="glass-card p-3 text-left">Platega</button>
+                <button onclick="startPayment('severpay')" class="glass-card p-3 text-left">SeverPay.io</button>
+                <button onclick="startPayment('cryptocloud')" class="glass-card p-3 text-left">CryptoCloud</button>
+                <button onclick="startPayment('crystalpay')" class="glass-card p-3 text-left">CrystalPay</button>
+                <button onclick="startPayment('cryptobot')" class="glass-card p-3 text-left">CryptoBot</button>
+                <button onclick="startPayment('donationalerts')" class="glass-card p-3 text-left">DonationAlerts</button>
+                <button onclick="startPayment('boosty')" class="glass-card p-3 text-left">Boosty.to</button>
+            </div>
+            <button onclick="showStep(1)" class="mt-4 text-gray-400">← Назад</button>
+        </div>
+
+        <div class="step" id="step3">
+            <h3 class="text-2xl font-bold mb-4">Шаг 3. Оплата</h3>
+            <p id="paymentDescription" class="text-gray-300 mb-3">Формируем ссылку...</p>
+            <a id="paymentUrl" href="#" target="_blank" class="neon-btn px-6 py-3 rounded-xl inline-block mb-3">Перейти к оплате</a>
+            <div><span id="paymentStatus" class="status-badge status-pending mb-4">⏳ Ожидаем оплату...</span></div>
+            <p id="timeLeft" class="text-xs text-gray-500 mb-3">Время на оплату: 30:00</p>
+            <button onclick="checkPaymentNow()" class="text-[#00FFA3] underline">Проверить статус</button>
+            <button onclick="showStep(2)" class="block mt-4 text-gray-400">← Назад</button>
+        </div>
+
+        <div class="step" id="step4">
+            <h3 class="text-2xl font-bold mb-4">Оплата подтверждена</h3>
+            <p class="text-gray-300 mb-3">Перейдите в Telegram-бота и напишите в поддержку, приложив чек.</p>
+            <a href="https://t.me/wireguard_easy_buy_bot" target="_blank" class="neon-btn px-6 py-3 rounded-xl inline-block mb-3 w-full text-center">Перейти в Telegram-бот</a>
+            <p class="text-sm text-gray-400">Сообщение: "Оплатил тариф <span id="paidTariff"></span>, заказ <span id="paidOrder"></span>. Прикладываю чек"</p>
+            <button onclick="closePaymentModal()" class="mt-4 text-gray-400">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedTariff = { id: null, name: '', price: 0 };
+let currentOrderId = null;
+let timerInterval = null;
+let pollInterval = null;
+let timeLeftSeconds = 30 * 60;
+
+function generateOrderId() {
+    return `VPN_${selectedTariff.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+function selectTariff(id, name, price) {
+    selectedTariff = { id, name, price };
+    document.getElementById('selectedTariffName').innerText = name;
+    document.getElementById('selectedTariffPrice').innerText = price;
+    openPaymentModal();
+}
+function openPaymentModal() { document.getElementById('paymentModal').classList.add('active'); showStep(1); }
+function closePaymentModal() { document.getElementById('paymentModal').classList.remove('active'); clearInterval(timerInterval); clearInterval(pollInterval); currentOrderId = null; timeLeftSeconds = 30*60; }
+function showStep(step) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById(`step${step}`).classList.add('active'); }
+
+async function startPayment(provider) {
+    showStep(3);
+    currentOrderId = generateOrderId();
+    const customerEmail = document.getElementById('customerEmail').value.trim();
+
+    try {
+        const resp = await fetch('/create_payment.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider, tariff_id: selectedTariff.id, order_id: currentOrderId, customer_email: customerEmail })
+        });
+
+        const data = await resp.json();
+        if (!data.success) {
+            alert(data.message || 'Не удалось создать платеж');
+            showStep(2);
+            return;
+        }
+
+        document.getElementById('paymentDescription').innerText = `Ссылка на оплату (${data.provider_label}) готова.`;
+        document.getElementById('paymentUrl').href = data.payment_url;
+        startPaymentTimer();
+        startPolling();
+    } catch (error) {
+        alert('Ошибка сети при создании платежа. Попробуйте еще раз.');
+        showStep(2);
+    }
+}
+
+function startPaymentTimer() {
+    clearInterval(timerInterval);
+    timeLeftSeconds = 30 * 60;
+    renderTimer();
+    timerInterval = setInterval(() => {
+        timeLeftSeconds -= 1;
+        renderTimer();
+        if (timeLeftSeconds <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('paymentStatus').innerText = '⏰ Время оплаты истекло';
+            document.getElementById('paymentStatus').className = 'status-badge status-expired';
+        }
+    }, 1000);
+}
+function renderTimer() {
+    const m = String(Math.max(0, Math.floor(timeLeftSeconds / 60))).padStart(2, '0');
+    const s = String(Math.max(0, timeLeftSeconds % 60)).padStart(2, '0');
+    document.getElementById('timeLeft').innerText = `Время на оплату: ${m}:${s}`;
+}
+function startPolling() { clearInterval(pollInterval); pollInterval = setInterval(checkPaymentNow, 5000); }
+async function checkPaymentNow() {
+    if (!currentOrderId) return;
+    try {
+        const response = await fetch('/check_order.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: currentOrderId })
+        });
+        const status = await response.json();
+        if (status.status === 'paid') {
+            clearInterval(pollInterval); clearInterval(timerInterval);
+            document.getElementById('paymentStatus').innerText = '✅ Оплата подтверждена';
+            document.getElementById('paymentStatus').className = 'status-badge status-paid';
+            document.getElementById('paidTariff').innerText = selectedTariff.name;
+            document.getElementById('paidOrder').innerText = currentOrderId;
+            showStep(4);
+        }
+    } catch (error) {
+        // временная сетевая ошибка, молча продолжим polling
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('paymentModal').addEventListener('click', (e) => { if (e.target.id === 'paymentModal') closePaymentModal(); });
+
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status');
+    const orderId = params.get('order_id');
+
+    if (status === 'fail') {
+        alert('Оплата не завершена. Попробуйте снова.');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (status === 'success' && orderId) {
+        currentOrderId = orderId;
+        openPaymentModal();
+        document.getElementById('paidTariff').innerText = 'оплаченный';
+        document.getElementById('paidOrder').innerText = currentOrderId;
+        showStep(4);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
+</script>
+</body>
+</html>
