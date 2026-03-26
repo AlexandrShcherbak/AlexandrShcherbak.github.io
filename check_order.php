@@ -14,7 +14,6 @@ if (!is_array($data)) {
 }
 
 $orderId = trim($data['order_id'] ?? '');
-
 if ($orderId === '') {
     echo json_encode(['status' => 'error', 'message' => 'order_id is required']);
     exit;
@@ -37,8 +36,4 @@ if (isset($orders[$orderId]) && ($orders[$orderId]['status'] ?? '') === 'paid') 
     exit;
 }
 
-<<<<<<< HEAD
 echo json_encode(['status' => 'pending']);
-=======
-echo json_encode(['status' => 'pending']);
->>>>>>> main
