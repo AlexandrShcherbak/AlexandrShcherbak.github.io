@@ -1,174 +1,248 @@
 <?php
+require_once __DIR__ . '/env.php';
 
-declare(strict_types=1);
+header('Content-Type: application/json');
 
-require_once __DIR__ . '/backend.php';
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method Not Allowed'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
-requireMethod('POST');
-$payload = readJsonBody();
+function jsonResponse(array $data): void {
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
-$provider = strtolower(trim((string) ($payload['provider'] ?? '')));
+function buildExternalUrl(string $baseUrl, array $params): string {
+    $separator = str_contains($baseUrl, '?') ? '&' : '?';
+    return rtrim($baseUrl, '&?') . $separator . http_build_query($params);
+}
+
+function createSeverpayPayment(string $orderId, float $amount, string $currency, string $email): ?string {
+    $mid = getenv('SEVERPAY_MID') ?: '';
+    $token = getenv('SEVERPAY_TOKEN') ?: '';
+    $apiUrl = getenv('SEVERPAY_API_URL') ?: 'https://severpay.io/api/merchant/payin/create';
+
+    if ($mid === '' || $token === '') {
+        return null;
+    }
+
+    $body = [
+        'amount' => number_format($amount, 2, '.', ''),
+        'client_email' => $email,
+        'client_id' => 'vpn_user',
+        'currency' => $currency,
+        'mid' => (int) $mid,
+        'order_id' => $orderId,
+        'salt' => bin2hex(random_bytes(8)),
+        'url_return' => (getenv('PAYMENT_RETURN_URL') ?: (getenv('APP_BASE_URL') ?: '')) . '/indexfreekassa.html?order_id=' . rawurlencode($orderId) . '&status=success',
+    ];
+
+    ksort($body);
+    $body['sign'] = hash_hmac('sha256', json_encode($body, JSON_UNESCAPED_UNICODE), $token);
+
+    $ch = curl_init($apiUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_UNICODE),
+        CURLOPT_TIMEOUT => 15,
+    ]);
+
+    $result = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    if ($result === false || $httpCode >= 400) {
+        return null;
+    }
+
+    $response = json_decode($result, true);
+    return $response['data']['url'] ?? null;
+}
+
+function createCryptoCloudPayment(string $orderId, float $amount, string $currency): ?string {
+    $apiKey = getenv('CRYPTOCLOUD_API_KEY') ?: '';
+    $shopId = getenv('CRYPTOCLOUD_SHOP_ID') ?: '';
+    $apiUrl = getenv('CRYPTOCLOUD_API_URL') ?: 'https://api.cryptocloud.plus/v2/invoice/create';
+
+    if ($apiKey === '' || $shopId === '') {
+        return null;
+    }
+
+    $payload = [
+        'shop_id' => $shopId,
+        'amount' => number_format($amount, 2, '.', ''),
+        'currency' => $currency,
+        'order_id' => $orderId,
+        'desc' => 'VPN Secure тариф',
+    ];
+
+    $ch = curl_init($apiUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Token ' . $apiKey,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_TIMEOUT => 15,
+    ]);
+
+    $result = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    if ($result === false || $httpCode >= 400) {
+        return null;
+    }
+
+    $response = json_decode($result, true);
+    return $response['result']['link'] ?? ($response['result']['url'] ?? null);
+}
+
+$payload = json_decode(file_get_contents('php://input'), true);
+if (!is_array($payload)) {
+    jsonResponse(['success' => false, 'message' => 'Ожидался JSON payload']);
+}
+
+$provider = strtolower(trim($payload['provider'] ?? ''));
 $tariffId = (int) ($payload['tariff_id'] ?? 0);
-$orderId = trim((string) ($payload['order_id'] ?? ''));
-$customerEmail = trim((string) ($payload['customer_email'] ?? ''));
+$orderId = trim($payload['order_id'] ?? '');
+$customerEmail = trim($payload['customer_email'] ?? '');
 
-$tariffs = paymentTariffs();
+$tariffs = [
+    1 => ['name' => '1 месяц', 'price' => 150],
+    2 => ['name' => '6 месяцев', 'price' => 600],
+    3 => ['name' => '12 месяцев', 'price' => 1200],
+];
+
+if (!isset($tariffs[$tariffId]) || $orderId === '' || $provider === '') {
+    jsonResponse(['success' => false, 'message' => 'Некорректные данные платежа']);
+}
+
 $allowedProviders = ['freekassa', 'platega', 'severpay', 'cryptocloud', 'crystalpay', 'cryptobot', 'donationalerts', 'boosty'];
-
-if (!isset($tariffs[$tariffId]) || $provider === '') {
-    sendJson(['success' => false, 'message' => 'Некорректные данные платежа'], 400);
-}
 if (!in_array($provider, $allowedProviders, true)) {
-    sendJson(['success' => false, 'message' => 'Платежная система не поддерживается'], 400);
+    jsonResponse(['success' => false, 'message' => 'Платежная система не поддерживается']);
 }
-if (!isValidOrderId($orderId)) {
-    sendJson(['success' => false, 'message' => 'Некорректный формат order_id'], 400);
-}
+
 if ($customerEmail === '') {
     $customerEmail = getenv('DEFAULT_CUSTOMER_EMAIL') ?: 'client@example.com';
 }
 
-$amount = number_format((float) $tariffs[$tariffId]['price'], 2, '.', '');
+$amount = (float) $tariffs[$tariffId]['price'];
 $currency = getenv('PAYMENT_CURRENCY') ?: 'RUB';
 
-$paymentUrl = null;
-$providerLabel = null;
+$ordersFile = __DIR__ . '/orders.json';
+$orders = file_exists($ordersFile) ? (json_decode(file_get_contents($ordersFile), true) ?: []) : [];
 
-if ($provider === 'freekassa') {
-    $merchantId = getenv('FREEKASSA_MERCHANT_ID') ?: '';
-    $secretWord1 = getenv('FREEKASSA_SECRET_WORD_1') ?: '';
-    $fkCurrency = getenv('FREEKASSA_CURRENCY') ?: $currency;
-
-    if ($merchantId === '' || $secretWord1 === '') {
-        sendJson(['success' => false, 'message' => 'Не настроены переменные окружения Freekassa'], 500);
-    }
-
-    $sign = md5($merchantId . ':' . $amount . ':' . $secretWord1 . ':' . $fkCurrency . ':' . $orderId);
-    $paymentUrl = 'https://pay.fk.money/?' . http_build_query([
-        'm' => $merchantId,
-        'oa' => $amount,
-        'currency' => $fkCurrency,
-        'o' => $orderId,
-        's' => $sign,
-        'lang' => 'ru',
-        'em' => $customerEmail,
-        'us_tariff' => (string) $tariffId,
-        'us_tariff_name' => $tariffs[$tariffId]['name'],
-    ]);
-    $providerLabel = 'Freekassa';
-}
-
-if ($provider === 'platega') {
-    $baseUrl = getenv('PLATEGA_PAYMENT_URL') ?: '';
-    if ($baseUrl === '') {
-        sendJson(['success' => false, 'message' => 'Не настроена переменная PLATEGA_PAYMENT_URL'], 500);
-    }
-
-    $paymentUrl = buildUrl($baseUrl, [
-        'order_id' => $orderId,
-        'amount' => $amount,
-        'currency' => $currency,
-    ]);
-    $providerLabel = 'Platega';
-}
-
-if ($provider === 'severpay') {
-    $baseUrl = getenv('SEVERPAY_PAYMENT_URL') ?: '';
-    if ($baseUrl === '') {
-        sendJson(['success' => false, 'message' => 'Не настроена переменная SEVERPAY_PAYMENT_URL'], 500);
-    }
-
-    $paymentUrl = buildUrl($baseUrl, [
-        'order_id' => $orderId,
-        'amount' => $amount,
-        'currency' => $currency,
-        'email' => $customerEmail,
-    ]);
-    $providerLabel = 'SeverPay';
-}
-
-if ($provider === 'cryptocloud') {
-    $baseUrl = getenv('CRYPTOCLOUD_PAYMENT_URL') ?: '';
-    if ($baseUrl === '') {
-        sendJson(['success' => false, 'message' => 'Не настроена переменная CRYPTOCLOUD_PAYMENT_URL'], 500);
-    }
-
-    $paymentUrl = buildUrl($baseUrl, [
-        'order_id' => $orderId,
-        'amount' => $amount,
-        'currency' => $currency,
-    ]);
-    $providerLabel = 'CryptoCloud';
-}
-
-if ($provider === 'crystalpay') {
-    $baseUrl = getenv('CRYSTALPAY_PAYMENT_URL') ?: '';
-    if ($baseUrl === '') {
-        sendJson(['success' => false, 'message' => 'Не настроена переменная CRYSTALPAY_PAYMENT_URL'], 500);
-    }
-
-    $paymentUrl = buildUrl($baseUrl, [
-        'order_id' => $orderId,
-        'amount' => $amount,
-        'currency' => $currency,
-    ]);
-    $providerLabel = 'CrystalPay';
-}
-
-if ($provider === 'cryptobot') {
-    $baseUrl = getenv('CRYPTOBOT_PAYMENT_URL') ?: '';
-    if ($baseUrl === '') {
-        sendJson(['success' => false, 'message' => 'Не настроена переменная CRYPTOBOT_PAYMENT_URL'], 500);
-    }
-
-    $paymentUrl = buildUrl($baseUrl, [
-        'order_id' => $orderId,
-        'amount' => $amount,
-        'currency' => $currency,
-    ]);
-    $providerLabel = 'CryptoBot';
-}
-
-if ($provider === 'donationalerts') {
-    $baseUrl = getenv('DONATIONALERTS_PAYMENT_URL') ?: 'https://www.donationalerts.com/r/countvpn';
-    $paymentUrl = buildUrl($baseUrl, [
-        'order_id' => $orderId,
-        'amount' => $amount,
-    ]);
-    $providerLabel = 'DonationAlerts';
-}
-
-if ($provider === 'boosty') {
-    $baseUrl = getenv('BOOSTY_PAYMENT_URL') ?: '';
-    if ($baseUrl === '') {
-        sendJson(['success' => false, 'message' => 'Не настроена переменная BOOSTY_PAYMENT_URL'], 500);
-    }
-
-    $paymentUrl = buildUrl($baseUrl, [
-        'order_id' => $orderId,
-        'amount' => $amount,
-    ]);
-    $providerLabel = 'Boosty';
-}
-
-if ($paymentUrl === null || $providerLabel === null) {
-    sendJson(['success' => false, 'message' => 'Платежная система не поддерживается'], 400);
-}
-
-saveOrder([
+$orders[$orderId] = [
     'order_id' => $orderId,
     'tariff_id' => $tariffId,
     'tariff_name' => $tariffs[$tariffId]['name'],
-    'amount' => (float) $amount,
+    'amount' => $amount,
     'currency' => $currency,
     'provider' => $provider,
     'customer_email' => $customerEmail,
     'status' => 'pending',
     'created_at' => date('Y-m-d H:i:s'),
-]);
+];
+file_put_contents($ordersFile, json_encode($orders, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 
-sendJson([
-    'success' => true,
-    'provider_label' => $providerLabel,
-    'payment_url' => $paymentUrl,
-]);
+switch ($provider) {
+    case 'freekassa':
+        $merchantId = getenv('FREEKASSA_MERCHANT_ID') ?: '';
+        $secretWord1 = getenv('FREEKASSA_SECRET_WORD_1') ?: '';
+        $fkCurrency = getenv('FREEKASSA_CURRENCY') ?: 'RUB';
+        if ($merchantId === '' || $secretWord1 === '') {
+            jsonResponse(['success' => false, 'message' => 'Не настроены переменные окружения Freekassa']);
+        }
+        $sign = md5($merchantId . ':' . $amount . ':' . $secretWord1 . ':' . $fkCurrency . ':' . $orderId);
+        $url = 'https://pay.fk.money/?' . http_build_query([
+            'm' => $merchantId,
+            'oa' => $amount,
+            'currency' => $fkCurrency,
+            'o' => $orderId,
+            's' => $sign,
+            'lang' => 'ru',
+            'em' => $customerEmail,
+            'us_tariff' => (string) $tariffId,
+            'us_tariff_name' => $tariffs[$tariffId]['name'],
+        ]);
+        jsonResponse(['success' => true, 'provider_label' => 'Freekassa', 'payment_url' => $url]);
+
+    case 'platega':
+        $base = getenv('PLATEGA_PAYMENT_URL') ?: '';
+        if ($base === '') {
+            jsonResponse(['success' => false, 'message' => 'Не настроена переменная PLATEGA_PAYMENT_URL']);
+        }
+        jsonResponse([
+            'success' => true,
+            'provider_label' => 'Platega',
+            'payment_url' => buildExternalUrl($base, ['order_id' => $orderId, 'amount' => $amount, 'currency' => $currency]),
+        ]);
+
+    case 'severpay':
+        $severpayUrl = createSeverpayPayment($orderId, $amount, $currency, $customerEmail);
+        if ($severpayUrl === null) {
+            $fallback = getenv('SEVERPAY_PAYMENT_URL') ?: '';
+            if ($fallback === '') {
+                jsonResponse(['success' => false, 'message' => 'Не настроены параметры SeverPay']);
+            }
+            $severpayUrl = buildExternalUrl($fallback, ['order_id' => $orderId, 'amount' => $amount, 'currency' => $currency]);
+        }
+        jsonResponse(['success' => true, 'provider_label' => 'SeverPay', 'payment_url' => $severpayUrl]);
+
+    case 'cryptocloud':
+        $cloudUrl = createCryptoCloudPayment($orderId, $amount, $currency);
+        if ($cloudUrl === null) {
+            $fallback = getenv('CRYPTOCLOUD_PAYMENT_URL') ?: '';
+            if ($fallback === '') {
+                jsonResponse(['success' => false, 'message' => 'Не настроены параметры CryptoCloud']);
+            }
+            $cloudUrl = buildExternalUrl($fallback, ['order_id' => $orderId, 'amount' => $amount, 'currency' => $currency]);
+        }
+        jsonResponse(['success' => true, 'provider_label' => 'CryptoCloud', 'payment_url' => $cloudUrl]);
+
+    case 'crystalpay':
+        $base = getenv('CRYSTALPAY_PAYMENT_URL') ?: '';
+        if ($base === '') {
+            jsonResponse(['success' => false, 'message' => 'Не настроена переменная CRYSTALPAY_PAYMENT_URL']);
+        }
+        jsonResponse([
+            'success' => true,
+            'provider_label' => 'CrystalPay',
+            'payment_url' => buildExternalUrl($base, ['order_id' => $orderId, 'amount' => $amount, 'currency' => $currency]),
+        ]);
+
+    case 'cryptobot':
+        $base = getenv('CRYPTOBOT_PAYMENT_URL') ?: '';
+        if ($base === '') {
+            jsonResponse(['success' => false, 'message' => 'Не настроена переменная CRYPTOBOT_PAYMENT_URL']);
+        }
+        jsonResponse([
+            'success' => true,
+            'provider_label' => 'CryptoBot',
+            'payment_url' => buildExternalUrl($base, ['order_id' => $orderId, 'amount' => $amount, 'currency' => $currency]),
+        ]);
+
+    case 'donationalerts':
+        $base = getenv('DONATIONALERTS_PAYMENT_URL') ?: 'https://www.donationalerts.com/r/countvpn';
+        jsonResponse([
+            'success' => true,
+            'provider_label' => 'DonationAlerts',
+            'payment_url' => buildExternalUrl($base, ['amount' => $amount, 'order_id' => $orderId]),
+        ]);
+
+    case 'boosty':
+        $base = getenv('BOOSTY_PAYMENT_URL') ?: '';
+        if ($base === '') {
+            jsonResponse(['success' => false, 'message' => 'Не настроена переменная BOOSTY_PAYMENT_URL']);
+        }
+        jsonResponse(['success' => true, 'provider_label' => 'Boosty', 'payment_url' => buildExternalUrl($base, ['amount' => $amount, 'order_id' => $orderId])]);
+}
+
+jsonResponse(['success' => false, 'message' => 'Платежная система не поддерживается']);
