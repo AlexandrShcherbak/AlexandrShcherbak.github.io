@@ -1,44 +1,26 @@
 <?php
-header('Content-Type: application/json');
 
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['status' => 'error', 'message' => 'Method Not Allowed']);
-    exit;
+declare(strict_types=1);
+
+require_once __DIR__ . '/backend.php';
+
+requireMethod('POST');
+$payload = readJsonBody();
+
+$orderId = trim((string) ($payload['order_id'] ?? ''));
+if (!isValidOrderId($orderId)) {
+    sendJson(['status' => 'error', 'message' => 'order_id is required'], 400);
 }
 
-$data = json_decode(file_get_contents('php://input'), true);
-if (!is_array($data)) {
-    echo json_encode(['status' => 'error', 'message' => 'Invalid JSON']);
-    exit;
-}
+$orders = loadOrders();
+$order = $orders[$orderId] ?? null;
 
-$orderId = trim($data['order_id'] ?? '');
-
-if ($orderId === '') {
-    echo json_encode(['status' => 'error', 'message' => 'order_id is required']);
-    exit;
-}
-
-$ordersFile = __DIR__ . '/orders.json';
-if (!file_exists($ordersFile)) {
-    echo json_encode(['status' => 'pending']);
-    exit;
-}
-
-$orders = json_decode(file_get_contents($ordersFile), true) ?: [];
-
-if (isset($orders[$orderId]) && ($orders[$orderId]['status'] ?? '') === 'paid') {
-    echo json_encode([
+if (is_array($order) && ($order['status'] ?? '') === 'paid') {
+    sendJson([
         'status' => 'paid',
-        'provider' => $orders[$orderId]['provider'] ?? null,
-        'paid_at' => $orders[$orderId]['paid_at'] ?? null,
+        'provider' => $order['provider'] ?? null,
+        'paid_at' => $order['paid_at'] ?? null,
     ]);
-    exit;
 }
 
-<<<<<<< HEAD
-echo json_encode(['status' => 'pending']);
-=======
-echo json_encode(['status' => 'pending']);
->>>>>>> main
+sendJson(['status' => 'pending']);
